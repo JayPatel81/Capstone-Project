@@ -5,34 +5,59 @@ import TextField from '@mui/material/TextField';
 import Grid from '@mui/material/Grid';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
+import Axios from 'axios'
 
 export default function EnrollStudent() {
 
     const [previewImage, setPreviewImage] = React.useState()
+    const [image, setImage] = React.useState()
 
     const selectFile = (event) => {
         setPreviewImage(URL.createObjectURL(event.target.files[0]))
+        console.log(event.target.files[0])
+        setImage(event.target.files[0])
     }
 
     const enrollStudent = (event) => {
         event.preventDefault();
         const data = new FormData(event.currentTarget);
         
-        const payload = {
-        studentId: data.get('studentid'),
-        name: data.get('name'),
-        course: data.get('course'),
-        email: data.get('emailaddress'),
-        photo: data.get('photo')
-        }
+        const formData = new FormData()
+        const imageData = new FormData()
 
-        console.log(payload);
+        formData.append("studentId", data.get('studentid'))
+        formData.append("name", data.get('name'))
+        formData.append("course", data.get('course'))
+        formData.append("email", data.get('email'))
+        imageData.append("photo", image)
+        imageData.append('id', data.get('studentid'))
+
+        Axios.post('http://localhost:4000/upload-image/'+data.get('studentid'), imageData, {
+          headers: {
+            'Content-Type': 'multipart/form-data'
+          }
+        })
+        .then(res => {
+          console.log(res.data)
+        })
+        .catch(err => console.log(err))
+        
+        console.log(data.get('photo'))
+        Axios.post('http://localhost:4000/user/new-student', formData, {
+          headers: {
+            'Content-Type': 'multipart/form-data'
+          }
+        })
+          .then(res => {
+            console.log(res.data)
+            window.location.reload(false);
+          })
+          .catch(err => console.log(err))
     }
 
     return(
         <div>
             <PageTitle title="Enroll Student" />
-
             <Box component="form" noValidate onSubmit={enrollStudent} sx={{ mt: 3 }} style={{width: '80%', margin: '50px auto 0 auto'}}>
             <Grid container spacing={2}>
               <Grid item xs={12}>
@@ -60,7 +85,7 @@ export default function EnrollStudent() {
                 <TextField
                   required
                   fullWidth
-                  name="emailaddress"
+                  name="email"
                   label="Email Address"
                   type="email"
                   id="emailaddress"
