@@ -35,9 +35,6 @@ app.post('/upload-image/:id', upload.single('photo'), async (req, res) => {
     }
 })
 
-app.get('/', (req, res) => {
-    res.json({'hi': "dhrumi"})
-})
 
 app.use('/user', routes.user)
 // app.use(handle.notFound)

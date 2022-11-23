@@ -36,3 +36,33 @@ exports.getStudents = async (req, res, next) => {
         console.log(error);
     }
 }
+
+exports.addAttendance = async (req, res, next) => {
+    try {
+        
+        const { spawn } = require('child_process');
+        const pyProg = spawn('python', ['sample.py']);
+        let studentIds = []
+        pyProg.stdout.on('data', async function(data) {
+            try {
+                let id = data.toString().slice(0,-2)
+                console.log(id);
+                studentIds.push(id)
+
+                var today = new Date();
+                var dd = String(today.getDate()).padStart(2, '0');
+                var mm = String(today.getMonth() + 1).padStart(2, '0'); //January is 0!
+                var yyyy = today.getFullYear();
+
+                let d = mm + '/' + dd + '/' + yyyy
+                let t = today.getHours() + ':' + today.getMinutes()
+                let result = await db.Student.findOneAndUpdate({'studentId': id}, {'attendance.present': 'yes', 'attendance.date': d, 'attendance.time': t})
+            } catch (error) {
+                console.log(error);
+            }
+        });
+        
+    } catch (err) {
+        console.log(err);
+    }
+}

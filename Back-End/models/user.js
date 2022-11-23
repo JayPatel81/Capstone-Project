@@ -6,7 +6,12 @@ const StudentSchema = new Schema({
     name: {type: String},
     course: {type: String},
     email: {type: String},
-    photo: {data: Buffer, contentType: String}
+    photo: {data: Buffer, contentType: String},
+    attendance: {
+        date: {type: String},
+        time: {type: String},
+        present: {type: String}
+    }
 });
 
 let Student = mongoose.model("Student", StudentSchema);
