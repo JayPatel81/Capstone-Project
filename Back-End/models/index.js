@@ -8,3 +8,4 @@ mongoose.connect(
     )
 
 module.exports.Student = require('./user')
+module.exports.Attendance = require('./attendance')

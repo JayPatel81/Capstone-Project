@@ -1,4 +1,5 @@
 const db = require('../models')
+const functions = require('../utils/functions')
 
 
 exports.RegisterStudent = async (req, res, next) => {
@@ -49,14 +50,39 @@ exports.addAttendance = async (req, res, next) => {
                 console.log(id);
                 studentIds.push(id)
 
-                var today = new Date();
-                var dd = String(today.getDate()).padStart(2, '0');
-                var mm = String(today.getMonth() + 1).padStart(2, '0'); //January is 0!
-                var yyyy = today.getFullYear();
+                let dateAndTime = functions.getDate()
+                let date = dateAndTime[0]
+                let time = dateAndTime[1]
 
-                let d = mm + '/' + dd + '/' + yyyy
-                let t = today.getHours() + ':' + today.getMinutes()
-                let result = await db.Student.findOneAndUpdate({'studentId': id}, {'attendance.present': 'yes', 'attendance.date': d, 'attendance.time': t})
+                // find if attendance of today
+                let resultToday = await db.Attendance.findOne({date: date})
+
+                if(!resultToday) {
+                    // new entry
+                    let att = new db.Attendance({date: date, students: [id]})
+
+                    att.save()
+
+                    res.json({success: true, msg: 'attendance for today created successfully', data: att})
+                } else {
+                    // update student array
+                    let resultStudentUpdate = await db.Attendance.findOneAndUpdate(
+                        {
+                            date: date
+                        },
+                        {
+                            $push: {
+                                students: {id: id, time: time}
+                            }
+                        }
+                    )
+                    console.log('attendance added!')
+                    // if (resultStudentUpdate){
+                    //     res.json({success: true, msg: 'student attendance done', data: resultStudentUpdate})
+                    // } else {
+                    //     res.json({success: false, msg: 'error', data: null})
+                    // }
+                }
             } catch (error) {
                 console.log(error);
             }
