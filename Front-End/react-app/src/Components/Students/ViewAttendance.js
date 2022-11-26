@@ -3,6 +3,7 @@ import { Button } from '@mui/material';
 import Axios from 'axios'
 import { DataGrid } from '@mui/x-data-grid';
 import uuid from 'react-uuid'
+import { Link } from 'react-router-dom';
 
 const columns = [
     { field: 'id', headerName: 'ID' },
@@ -14,9 +15,11 @@ const columns = [
       field: 'action',
       headerName: 'Action',
       renderCell: (cellValues) => {
-        console.log(cellValues);
+        console.log(cellValues.row.studentId);
         return(
-            <Button>view</Button>
+            <Link to={'/view-student/' + cellValues.row.studentId}>
+                <Button>view</Button>
+            </Link>
         )
       }
     },

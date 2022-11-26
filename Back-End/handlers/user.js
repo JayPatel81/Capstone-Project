@@ -1,6 +1,9 @@
 const db = require('../models')
 const functions = require('../utils/functions')
-
+const { 
+    v1: uuidv1,
+    v4: uuidv4,
+  } = require('uuid');
 
 exports.RegisterStudent = async (req, res, next) => {
     try {
@@ -38,6 +41,28 @@ exports.getStudents = async (req, res, next) => {
     }
 }
 
+exports.getStudent = async (req, res, next) => {
+    try {
+        let student = await db.Student.findOne({studentId: req.params.id})
+
+        let att = await db.Attendance.find({'students.id': req.params.id})
+
+        let attendance = []
+
+        for (let i = 0; i < att.length; i++) {
+            const attend = att[i];
+            
+            var result = attend.students.find(item => item.id === req.params.id);
+            // console.log('result: ', result)
+            attendance.push({id: uuidv1(), date: attend.date, time: result.time})
+        }
+        console.log('result: ', attendance);
+        res.json({success: true, msg: 'student fetched', data: {student: student, attendance: attendance}})
+    } catch (error) {
+        console.log(error);
+    }
+}
+
 exports.addAttendance = async (req, res, next) => {
     try {
         
@@ -59,11 +84,11 @@ exports.addAttendance = async (req, res, next) => {
 
                 if(!resultToday) {
                     // new entry
-                    let att = new db.Attendance({date: date, students: [id]})
+                    let att = new db.Attendance({date: date, students: [{id: id, time: time}]})
 
                     att.save()
-
-                    res.json({success: true, msg: 'attendance for today created successfully', data: att})
+                    console.log('success...');
+                    // res.json({success: true, msg: 'attendance for today created successfully', data: att})
                 } else {
                     // update student array
                     let resultStudentUpdate = await db.Attendance.findOneAndUpdate(
@@ -84,7 +109,7 @@ exports.addAttendance = async (req, res, next) => {
                     // }
                 }
             } catch (error) {
-                console.log(error);
+                console.log('error: ', error);
             }
         });
         
