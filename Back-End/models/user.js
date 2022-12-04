@@ -7,10 +7,12 @@ const StudentSchema = new Schema({
     course: {type: String},
     email: {type: String},
     photo: {data: Buffer, contentType: String},
-    attendance: {
-        date: {type: String},
-        time: {type: String},
-        present: {type: String}
+    termDetails: {
+        term: {type: String},
+        from: {type: String},
+        to: {type: String},
+        days: {type: Array},
+        dates: {type: Array}
     }
 });
 

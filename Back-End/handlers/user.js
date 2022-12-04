@@ -1,3 +1,4 @@
+const moment = require('moment')
 const db = require('../models')
 const functions = require('../utils/functions')
 const { 
@@ -5,12 +6,50 @@ const {
     v4: uuidv4,
   } = require('uuid');
 
+const getDatesFromDays = (from, to, day) => {
+    
+    let start = moment(from);
+    let end = moment(to);
+
+    var arr = [];
+    // Get "next" monday
+    let tmp = start.clone().day(day);
+    if( tmp.isAfter(start, 'd') ){
+    arr.push(tmp.format('MM-DD-YYYY'));
+    }
+    while( tmp.isBefore(end) ){
+    tmp.add(7, 'days');
+    if(tmp.isBefore(end)) {
+        arr.push(tmp.format('MM-DD-YYYY'));
+    }
+    }
+    return arr
+}
+
 exports.RegisterStudent = async (req, res, next) => {
     try {
-        var data = req.body
-        console.log(req.file, 'this is file', req.body)
+        var {studentId, name, course, email, photo, term, fromDate, toDate, days} = req.body
+        let dates = []
+        days.split(',').forEach(day => {
+            dates.push(...getDatesFromDays(fromDate, toDate, day))
+        })
+
+        let newData = {
+            studentId: studentId,
+            name: name,
+            photo: photo,
+            email: email,
+            course: course,
+            termDetails: {
+                term: term,
+                from: fromDate,
+                to: toDate,
+                days: days.split(','),
+                dates: dates
+            }
+        }
         
-        var newUser = new db.Student(data)
+        var newUser = new db.Student(newData)
 
         newUser.save()
 
@@ -47,17 +86,40 @@ exports.getStudent = async (req, res, next) => {
 
         let att = await db.Attendance.find({'students.id': req.params.id})
 
+        let lectureDates = student.termDetails.dates
+
+
         let attendance = []
+        let times = []
 
         for (let i = 0; i < att.length; i++) {
             const attend = att[i];
             
             var result = attend.students.find(item => item.id === req.params.id);
-            // console.log('result: ', result)
-            attendance.push({id: uuidv1(), date: attend.date, time: result.time})
+            console.log('result: ', result)
+            times.push(result.time)
+            attendance.push(moment(attend.date).format('MM-DD-YYYY'))
+            // attendance.push({id: uuidv1(), date: attend.date, time: result.time})
         }
-        console.log('result: ', attendance);
-        res.json({success: true, msg: 'student fetched', data: {student: student, attendance: attendance}})
+        console.log('lecture: ', lectureDates)
+        console.log('attendance: ', attendance);
+        let finalAttendance = []
+        let count = 0
+        let present = 0
+        let absent = 0
+        lectureDates.forEach(l => {
+            if(attendance.includes(l)) {
+                // present
+                finalAttendance.push({id: uuidv1(), date: l, time: times[count], present: 'Present'})
+                count = count + 1
+                present = present + 1
+            } else {
+                // absent
+                finalAttendance.push({id: uuidv1(), date: l, time: '-', present: 'Absent'})
+                absent = absent + 1
+            }
+        })
+        res.json({success: true, msg: 'student fetched', data: {student: student, attendance: finalAttendance, count: [present, absent]}})
     } catch (error) {
         console.log(error);
     }
@@ -115,5 +177,42 @@ exports.addAttendance = async (req, res, next) => {
         
     } catch (err) {
         console.log(err);
+    }
+}
+
+exports.updateTime = async (req, res, next) => {
+    try {
+        
+        let {data, time, studentId} = req.body
+        console.log(req.body)
+
+        let update = await db.Attendance.findOneAndUpdate(
+            {date: data.date, 'students.id': studentId},
+            {
+                $set: {'students.$.time': time}
+            }
+        )
+
+        res.json({success: true, data: update, msg: 'updated time'})
+
+    } catch (error) {
+        console.log(error)
+    }
+}
+
+exports.deleteAttendance = async (req, res, next) => {
+    try {
+        
+        let {data, id} = req.body
+        console.log(req.body)
+        
+        let d = await db.Attendance.findOne({date: data.date})
+
+        console.log(d.students)
+
+        res.json({success: true, data: d, msg: 'attendance deleted'})
+
+    } catch (error) {
+        console.log(error)
     }
 }
