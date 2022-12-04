@@ -204,11 +204,31 @@ exports.deleteAttendance = async (req, res, next) => {
     try {
         
         let {data, id} = req.body
-        console.log(req.body)
+        console.log('body: ', req.body)
         
-        let d = await db.Attendance.findOne({date: data.date})
+        let d = await db.Attendance.findOneAndUpdate(
+            {
+                date: moment(data.date).format('MM/DD/YYYY')
+            },
+            {
+                $pull: {
+                    students: {
+                        id: id
+                    }
+                }
+            }
+        )
 
-        console.log(d.students)
+        let d1 = await db.Student.findOneAndUpdate(
+            {
+                studentId: id
+            },
+            {
+                $pull: {
+                    'termDetails.dates': data.date
+                }
+            }
+        )
 
         res.json({success: true, data: d, msg: 'attendance deleted'})
 
