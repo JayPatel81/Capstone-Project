@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { Button, Grid, Input } from '@mui/material';
+import { Box, Button, Grid, Input, TextField } from '@mui/material';
 import Axios from 'axios'
 import { DataGrid, selectedGridRowsCountSelector } from '@mui/x-data-grid';
 import uuid from 'react-uuid'
@@ -20,9 +20,14 @@ export default function ViewIndividualAttendance() {
     const [dialogTitleText, setDialogTitleText] = React.useState()
     const [open, setOpen] = React.useState(false)
     const [openDelete, setOpenDelete] = React.useState(false)
+    const [openEditProfile, setOpenEditProfile] = React.useState(false)
     const [selectedData, setSelectedData] = React.useState()
     const [tempTime, setTempTime] = React.useState('')
 
+    const [stuName, setStuName] = React.useState(student?.name)
+    const [stuEmail, setStuEmail] = React.useState(student?.email)
+    const [stuCourse, setStuCourse] = React.useState(student?.course)
+    const [stuId, setStuId] = React.useState(student?.studentId)
 
     const {id} = useParams()
 
@@ -37,6 +42,10 @@ export default function ViewIndividualAttendance() {
         setDialogTitleText('Delete '+data.date+' for student '+student.name)
         setTempTime(data.time)
         setOpenDelete(true)
+    }
+    const editProfileClicked = () => {
+        setDialogTitleText('Edit Profile for '+student.name)
+        setOpenEditProfile(true)
     }
 
     const columns = [
@@ -67,6 +76,7 @@ export default function ViewIndividualAttendance() {
     const handleClose = () => {
         setOpen(false)
         setOpenDelete(false)
+        setOpenEditProfile(false)
     }
 
     const getStudents = () => {
@@ -97,6 +107,7 @@ export default function ViewIndividualAttendance() {
                     setSelectedData({})
                     setTempTime('')
                     setOpen(false)
+                    setOpenEditProfile(false)
                 } else {
                     console.log('error')
                 }
@@ -118,6 +129,28 @@ export default function ViewIndividualAttendance() {
                 }
             })
     }
+
+    const updateProfile = (event) => {
+        event.preventDefault()
+        const data = new FormData(event.currentTarget)
+
+        const formData = new FormData()
+
+        formData.append('name', data.get('name'))
+        formData.append('course', data.get('course'))
+        formData.append('email', data.get('email'))
+        formData.append('studentId', student?.studentId)
+
+        Axios.post('http://localhost:4000/user/update-student', formData)
+            .then(res => {
+                if (res.data.success) {
+                    getStudents()
+                } else {
+                    console.log('error')
+                }
+            })
+            .catch(err => {console.log(err)})
+    }
     
     const EditDialogComponent = <Dialog onClose={handleClose} open={open}>
         <DialogTitle>{dialogTitleText}</DialogTitle>
@@ -132,6 +165,55 @@ export default function ViewIndividualAttendance() {
         <div style={{padding: '16px 24px'}}>
         Type 'Confirm' to delete: <Input type='text' name='time' value={tempTime} onChange={(e) => setTempTime(e.target.value)} />
         <Button disabled={tempTime !== 'Confirm' ? true : false} onClick={() => deleteAttendance(selectedData, student.studentId)} >Delete</Button>
+        </div>
+    </Dialog>
+
+    const EditProfileDialogComponent = <Dialog onClose={handleClose} open={openEditProfile}>
+        <DialogTitle>{dialogTitleText}</DialogTitle>
+        <div style={{padding: '16px 24px'}}>
+            <Box component="form" noValidate onSubmit={updateProfile} sx={{ mt: 3 }} style={{width: '100%', margin: '50px auto 0 auto'}}>
+                <Grid container spacing={5}>
+                <Grid item xs={12}>
+                    <TextField
+                        required
+                        fullWidth
+                        name="name"
+                        label="Student's Full Name"
+                        type="text"
+                        id="name"
+                        autoComplete="Name"
+                        defaultValue={student?.name}
+                        onChange={(e) => setStuName(e.target.value)}
+                        style={{marginBottom: '20px'}}
+                    />
+                    <TextField
+                        required
+                        fullWidth
+                        name="email"
+                        label="Email"
+                        type="email"
+                        id="email"
+                        autoComplete="Email"
+                        defaultValue={student?.email}
+                        onChange={(e) => setStuEmail(e.target.value)}
+                        style={{marginBottom: '20px'}}
+                    />
+                    <TextField
+                        required
+                        fullWidth
+                        name="course"
+                        label="Course"
+                        type="text"
+                        id="course"
+                        autoComplete="course"
+                        defaultValue={student?.course}
+                        onChange={(e) => setStuCourse(e.target.value)}
+                        style={{marginBottom: '20px'}}
+                    />
+                    <Button type={'submit'} variant='contained' >Update</Button>
+                </Grid>
+                </Grid>
+            </Box>
         </div>
     </Dialog>
 
@@ -156,10 +238,11 @@ export default function ViewIndividualAttendance() {
         <div style={{height: '1000px', width: '80%', margin: 'auto'}}>
             {EditDialogComponent}
             {DeleteDialogComponent}
+            {EditProfileDialogComponent}
 
             <Grid container spacing={2}>
                 <Grid item xs={12}>
-                    <h3>Results of {student?.name}</h3>
+                    <h3>Results of {student?.name} <Button onClick={editProfileClicked} ><EditIcon style={{fontSize: '20px'}} /></Button> </h3>
                 </Grid>
             </Grid>
             {student ? 

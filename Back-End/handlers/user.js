@@ -125,6 +125,34 @@ exports.getStudent = async (req, res, next) => {
     }
 }
 
+exports.updateStudent = async (req, res, next) => {
+    try {
+        
+        let {name, studentId, email, course} = req.body
+
+        let updatedStudent = await db.Student.findOneAndUpdate(
+            {
+                studentId: studentId
+            },
+            {
+                $set: {
+                    name: name,
+                    email: email,
+                    course: course
+                }
+            },
+            {
+                upsert: false
+            }
+        )
+
+        res.json({success: true, msg: 'student updated', data: updatedStudent})
+
+    } catch (error) {
+        console.log(error)
+    }
+}
+
 exports.addAttendance = async (req, res, next) => {
     try {
         

@@ -8,5 +8,6 @@ router.get('/add-attendance', handle.addAttendance)
 router.post('/new-student', handle.RegisterStudent )
 router.post('/update-time', handle.updateTime)
 router.post('/delete-attendance', handle.deleteAttendance)
+router.post('/update-student', handle.updateStudent)
 
 module.exports = router
