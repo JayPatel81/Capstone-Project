@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { Box, Button, Grid, Input, TextField } from '@mui/material';
+import { Box, Button, Grid, Input, InputLabel, MenuItem, Select, TextField } from '@mui/material';
 import Axios from 'axios'
 import { DataGrid, selectedGridRowsCountSelector } from '@mui/x-data-grid';
 import uuid from 'react-uuid'
@@ -23,6 +23,7 @@ export default function ViewIndividualAttendance() {
     const [openEditProfile, setOpenEditProfile] = React.useState(false)
     const [selectedData, setSelectedData] = React.useState()
     const [tempTime, setTempTime] = React.useState('')
+    const [tempAttendance, setTempAttendance] = React.useState('')
 
     const [stuName, setStuName] = React.useState(student?.name)
     const [stuEmail, setStuEmail] = React.useState(student?.email)
@@ -35,6 +36,7 @@ export default function ViewIndividualAttendance() {
         setSelectedData(data)
         setDialogTitleText('Edit '+data.date+' for student '+student.name)
         setTempTime(data.time)
+        setTempAttendance(data.present)
         setOpen(true)
     }
     const deleteClicked = (data) => {
@@ -62,7 +64,6 @@ export default function ViewIndividualAttendance() {
           headerName: 'Action',
           width: 200,
           renderCell: (cellValues) => {
-            console.log(cellValues);
             return(
                 <div>
                     <Button onClick={() => editClicked(cellValues.row)} ><EditIcon style={{fontSize: '18px'}}/></Button>
@@ -99,8 +100,8 @@ export default function ViewIndividualAttendance() {
         getStudents()
     }, [])
 
-    const updateTime = (data, time) => {
-        Axios.post('http://localhost:4000/user/update-time', {data: data, time: time, studentId: student.studentId})
+    const updateTime = (data, time, attendance) => {
+        Axios.post('http://localhost:4000/user/update-time', {data: data, time: time, attendance: attendance, studentId: student.studentId})
             .then(res => {
                 if (res.data.success) {
                     getStudents()
@@ -155,8 +156,22 @@ export default function ViewIndividualAttendance() {
     const EditDialogComponent = <Dialog onClose={handleClose} open={open}>
         <DialogTitle>{dialogTitleText}</DialogTitle>
         <div style={{padding: '16px 24px'}}>
-        Time: <Input type='text' name='time' value={tempTime} onChange={(e) => setTempTime(e.target.value)} />
-        <Button onClick={() => updateTime(selectedData, tempTime)} >Update</Button>
+        <InputLabel id="edit-time">Time</InputLabel>
+        <Input labelId='edit-time' type='text' name='time' value={tempTime} onChange={(e) => setTempTime(e.target.value)} />
+        <InputLabel id="demo-simple-select-label">Attendance</InputLabel>
+        <Select
+          labelId="demo-simple-select-label"
+          id="demo-simple-select"
+          defaultValue={tempAttendance}
+          label="Age"
+          onChange={(e) => setTempAttendance(e.target.value)}
+        >
+          <MenuItem value={'Present'} selected={tempAttendance === 'Present' ? true : false} >Present</MenuItem>
+          <MenuItem value={'Absent'} selected={tempAttendance === 'Absent' ? true : false} >Absent</MenuItem>
+        </Select>
+        <div>
+        <Button onClick={() => updateTime(selectedData, tempTime, tempAttendance)} >Update</Button>
+        </div>
         </div>
     </Dialog>
 

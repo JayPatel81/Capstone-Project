@@ -87,7 +87,7 @@ exports.getStudent = async (req, res, next) => {
         let att = await db.Attendance.find({'students.id': req.params.id})
 
         let lectureDates = student.termDetails.dates
-
+        console.log('att: ', att)
 
         let attendance = []
         let times = []
@@ -97,7 +97,7 @@ exports.getStudent = async (req, res, next) => {
             
             var result = attend.students.find(item => item.id === req.params.id);
             console.log('result: ', result)
-            times.push(result.time)
+            times.push({date: moment(attend.date).format('MM-DD-YYYY'), time: result.time})
             attendance.push(moment(attend.date).format('MM-DD-YYYY'))
             // attendance.push({id: uuidv1(), date: attend.date, time: result.time})
         }
@@ -107,10 +107,15 @@ exports.getStudent = async (req, res, next) => {
         let count = 0
         let present = 0
         let absent = 0
+
+        console.log('times: ', times);
+
+        /////check here
         lectureDates.forEach(l => {
             if(attendance.includes(l)) {
+                console.log('yes')
                 // present
-                finalAttendance.push({id: uuidv1(), date: l, time: times[count], present: 'Present'})
+                finalAttendance.push({id: uuidv1(), date: times.find(t => t.date === l).date, time: times.find(t => t.date === l).time, present: 'Present'})
                 count = count + 1
                 present = present + 1
             } else {
@@ -198,6 +203,8 @@ exports.addAttendance = async (req, res, next) => {
                     //     res.json({success: false, msg: 'error', data: null})
                     // }
                 }
+
+                res.json({data: 'success'})
             } catch (error) {
                 console.log('error: ', error);
             }
@@ -211,15 +218,71 @@ exports.addAttendance = async (req, res, next) => {
 exports.updateTime = async (req, res, next) => {
     try {
         
-        let {data, time, studentId} = req.body
+        let {data, time, studentId, attendance} = req.body
         console.log(req.body)
 
         let update = await db.Attendance.findOneAndUpdate(
-            {date: data.date, 'students.id': studentId},
             {
-                $set: {'students.$.time': time}
+                date: moment(data.date).format('MM/DD/YYYY'),
+                'students.id': studentId
+            },
+            {
+                $set: {
+                    'students.$.time': time
+                },
             }
         )
+
+        if (attendance !== data.present) {
+            if (attendance === 'Present') {
+
+                let a = await db.Attendance.findOne({date: moment(data.date).format('MM/DD/YYYY')})
+
+                if(a === null) {
+                    
+                    let newAtt = new db.Attendance({
+                        date: moment(data.date).format('MM/DD/YYYY'),
+                        students: [{
+                            id: studentId,
+                            time: time
+                        }]
+                    })
+
+                    newAtt.save()
+                } else {
+                    let updateAtt = await db.Attendance.findOneAndUpdate(
+                        {
+                            date: moment(data.date).format('MM/DD/YYYY'),
+                        },
+                        {
+                            $push: {
+                                students: {
+                                    id: studentId,
+                                    time: time
+                                }
+                            }
+                        }
+                    )
+                }
+
+            } else {
+                let updateAttAb = await db.Attendance.findOneAndUpdate(
+                    {
+                        date: moment(data.date).format('MM/DD/YYYY'),
+                    },
+                    {
+                        $pull: {
+                            students: {
+                                id: studentId,
+                            }
+                        }
+                    }
+                )
+                console.log('change to absent ',updateAttAb);
+            }
+        }
+
+        console.log('updated: ', update)
 
         res.json({success: true, data: update, msg: 'updated time'})
 
